@@ -99,7 +99,15 @@ class wpl_value_MYSQL : public wpl_value {
 		return true;
 	}
 
-	string toString() override {
+	void set_weak (wpl_value *value) override {
+		if (!set_strong(value)) {
+			ostringstream msg;
+			msg << "Could not set MYSQL value to value of type " << value->get_type_name();
+			throw new runtime_error(msg.str());
+		}
+	}
+
+	string toString() const override {
 		return string(wpl_typename_MYSQL);
 	};
 };

@@ -2,7 +2,7 @@
 
 -------------------------------------------------------------
 
-Copyright (c) MMXIII-MMXIV Atle Solbakken
+Copyright (c) MMXIII-MMXIX Atle Solbakken
 atle@goliathdns.no
 
 -------------------------------------------------------------
@@ -37,6 +37,14 @@ wpl_array::wpl_array (const wpl_array &copy) {
 	}
 }
 
+void wpl_array::pop() {
+	wpl_value *value = array.back();
+	array.pop_back();
+	if (value) {
+		delete value;
+	}
+}
+
 void wpl_array::set(int index, wpl_value *value) {
 	if (index >= array.size()) {
 		array.resize(index+1, NULL);
@@ -51,11 +59,27 @@ void wpl_array::push(wpl_value *value) {
 	set(array.size(), value);
 }
 
-wpl_array::~wpl_array() {
+void wpl_array::clear() {
 	for (wpl_value *value : array) {
-		delete value;
+		if (value) {
+			delete value;
+		}
 	}
 	array.clear();
+}
+
+wpl_array::~wpl_array() {
+	clear();
+}
+
+const wpl_value *wpl_array::get_readonly(int index) const {
+	if (index < 0) {
+		throw runtime_error("Attempted to read from array with negative index");
+	}
+	else if (index >= array.size()) {
+		throw runtime_error("Attempted to read from outside the array in read only mode");
+	}
+	return array[index];
 }
 
 wpl_value *wpl_array::get(int index) {
@@ -70,12 +94,19 @@ wpl_value *wpl_array::get(int index) {
 
 void wpl_array::replace (wpl_array &new_array) {
 	for (wpl_value *value : array) {
-		delete value;
+		if (value) {
+			delete value;
+		}
 	}
 	array.clear();
 	array.reserve(new_array.size());
 	for (wpl_value *value : new_array.array) {
-		array.push_back(value->clone());
+		if (value) {
+			array.push_back(value->clone());
+		}
+		else {
+			array.push_back(NULL);
+		}
 	}
 }
 
@@ -83,20 +114,34 @@ void wpl_array::output_json (wpl_io &io) {
 	io << "[";
 	bool first = true;
 	for (wpl_value *value : array) {
-		if (!first) {
-			io << ", ";
+		if (value) {
+
+			if (!first) {
+				io << ",";
+			}
+
+			if (value->isStruct() || value->isArray() || value->isPointer()) {
+				value->output_json(io);
+			}
+			else {
+				io << "\"";
+				value->output_json(io);
+				io << "\"";
+			}
+
+			first = false;
 		}
-		value->output_json(io);
-		first = false;
 	}
 	io << "]";
 }
 
 wpl_value *wpl_type_array_instance::new_instance() const {
-	return new wpl_value_array(template_type);
+	return new wpl_value_array(this, template_type);
 }
-void wpl_array::notify_destructor(wpl_namespace_session *nss, wpl_io &io) {
+void wpl_array::notify_destructor(wpl_state *state, wpl_namespace_session *nss, wpl_io &io) {
 	for (auto *value : array) {
-		value->notify_destructor(nss, io);
+		if (value) {
+			value->notify_destructor(state, nss, io);
+		}
 	}
 }

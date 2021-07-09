@@ -37,13 +37,25 @@ int wpl_value_env::do_operator (
 		wpl_value *lhs,
 		wpl_value *rhs
 ) {
-	if (op == &OP_ELEMENT) {
+	if (op == &OP_ELEMENT || op == &OP_ARRAY_SUBSCRIPTING) {
 		const char *str = exp_state->get_io().get_env(rhs->toString().c_str());
+		/* Check if next carrier is defined-operator */
+		if (!exp_state->empty()) {
+			shunting_yard_carrier &next_carrier = exp_state->top();
+			if (next_carrier.op == &OP_DEFINED) {
+				exp_state->pop();
+				wpl_value_bool result(str != NULL);
+				return result.do_operator_recursive(exp_state, final_result);
+			}
+		}
+
+		/* Crash if we attempt to used an undefined environment variable */
 		if (!str) {
 			cerr << "While searching for environment variable '" <<
 				rhs->toString() << "':\n";
 			throw runtime_error("Could not find environment variable");
 		}
+
 		wpl_value_string result_string(str);
 		return result_string.do_operator_recursive(exp_state, final_result);
 	}

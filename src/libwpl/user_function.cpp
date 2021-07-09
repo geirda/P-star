@@ -27,6 +27,7 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "user_function.h"
+#include "type_parse_signals.h"
 #include "block.h"
 
 wpl_user_function::wpl_user_function(
@@ -62,7 +63,7 @@ void wpl_user_function::parse_value(wpl_namespace *ns) {
 		}
 
 		wpl_parseable *parseable;
-		if (!(parseable = ns->new_find_parseable (buf))) {
+		if (!(parseable = find_parseable (buf))) {
 			load_position(begin_pos);
 			cerr << "While parsing name '" << buf <<
 				"' inside function argument declaration of function '" << get_name() <<
@@ -77,7 +78,7 @@ void wpl_user_function::parse_value(wpl_namespace *ns) {
 		}
 		catch (wpl_type_begin_variable_declaration &e) {
 			e.create_variable(this);
-			load_position(parseable->get_position());
+			load_position(e.get_position());
 		}
 
 		ignore_whitespace();
@@ -96,13 +97,9 @@ void wpl_user_function::parse_value(wpl_namespace *ns) {
 	no_arguments:
 
 	ignore_whitespace();
-	if (!ignore_letter ('{')) {
-		THROW_ELEMENT_EXCEPTION("Expected definition of function block after declaration");
-	}
 
-	block.set_parent_namespace(this);
 	block.load_position(get_position());
-	block.parse_value(&block);
+	block.parse_value(this);
 	load_position(block.get_position());
 
 	generate_signature();

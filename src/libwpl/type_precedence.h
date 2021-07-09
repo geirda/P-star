@@ -2,7 +2,7 @@
 
 -------------------------------------------------------------
 
-Copyright (c) MMXIII Atle Solbakken
+Copyright (c) MMXIII-MMXIV Atle Solbakken
 atle@goliathdns.no
 
 -------------------------------------------------------------
@@ -35,6 +35,7 @@ enum {
 	wpl_type_precedence_constant_pointer,
 	wpl_type_precedence_double_finalizer,
 	wpl_type_precedence_wrapper,
+	wpl_type_precedence_range,
 	wpl_type_precedence_output_trigger,
 	wpl_type_precedence_unresolved_identifier,
 	wpl_type_precedence_discard_chain,
@@ -53,6 +54,7 @@ enum {
 	wpl_type_precedence_struct,
 	wpl_type_precedence_class,
 	wpl_type_precedence_array,
+	wpl_type_precedence_pointer,
 	wpl_type_precedence_hash,
 	wpl_type_precedence_regex,
 
@@ -63,6 +65,7 @@ enum {
 	wpl_type_precedence_time,
 	wpl_type_precedence_file,
 	wpl_type_precedence_line,
+	wpl_type_precedence_auto,
 
 	wpl_type_precedence_middle,
 	

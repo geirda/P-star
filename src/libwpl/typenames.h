@@ -46,6 +46,7 @@ extern const char *wpl_typename_vstring;
 extern const char *wpl_typename_struct;
 extern const char *wpl_typename_class;
 extern const char *wpl_typename_array;
+extern const char *wpl_typename_pointer;
 extern const char *wpl_typename_hash;
 extern const char *wpl_typename_unresolved_identifier;
 extern const char *wpl_typename_function_ptr;
@@ -60,4 +61,5 @@ extern const char *wpl_typename_stdin;
 extern const char *wpl_typename_time;
 extern const char *wpl_typename_file;
 extern const char *wpl_typename_line;
+extern const char *wpl_typename_auto;
 

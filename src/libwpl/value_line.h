@@ -28,29 +28,36 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "types.h"
 #include "value_holder.h"
 #include "exception.h"
 #include "wpl_file.h"
+#include "type_file.h"
 
 #include <memory>
 
 class wpl_operator_struct;
 
 class wpl_value_line : public wpl_value {
+	private:
+	void check_modify();
+
 	protected:
 	shared_ptr<wpl_file> file;
 	shared_ptr<wpl_file_chunk> chunk;
 
 	public:
 	PRIMITIVE_TYPEINFO(line)
-	wpl_value_line () {}
+	wpl_value_line () : wpl_value() {}
 	wpl_value_line (int dummy) {}
 	wpl_value_line *clone() const { return new wpl_value_line(*this); };
 	wpl_value_line *clone_empty() const { return new wpl_value_line(0); };
 
 	void set_weak(wpl_value *value) override;
-	string toString() override;
+	bool set_strong(wpl_value *value) override {
+		set_weak(value);
+		return true;
+	}
+	string toString() const override;
 	bool toBool() override {
 		return (chunk) && chunk->get_size();
 	}

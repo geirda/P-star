@@ -26,12 +26,10 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
-#include "operator.h"
+#include "operator_types.h"
 #include "shunting_yard.h"
 #include "exception.h"
 #include "expression.h"
-#include "block.h"
-#include "debug.h"
 
 void shunting_yard_queue::dump() {
 	cout << "\n\n-----------------\n";
@@ -79,8 +77,9 @@ void shunting_yard::prepare_operator (const wpl_operator_struct *new_op) {
 			out_add(stack_op);
 		}
 		else if (!WPL_OP_IS_LEFT_PAR(stack_op) &&
-			(stack_op->precedence == new_op->precedence) &&
-			WPL_OP_IS_LEFT_ASSOC(stack_op->flags)
+			(	(WPL_OP_IS_LEFT_ASSOC(new_op->flags) && (new_op->precedence >= stack_op->precedence)) ||
+				(new_op->precedence > stack_op->precedence)
+			)
 		) {
 			out_add(stack_op);
 		}
@@ -128,8 +127,9 @@ void shunting_yard::shunt_operator (const wpl_operator_struct *new_op) {
 				out_add(stack_op);
 			}
 			else if (!WPL_OP_IS_LEFT_PAR(stack_op) &&
-				(stack_op->precedence == new_op->precedence) &&
-				WPL_OP_IS_LEFT_ASSOC(stack_op->flags)
+				(	(WPL_OP_IS_LEFT_ASSOC(new_op->flags) && (new_op->precedence >= stack_op->precedence)) ||
+					(new_op->precedence > stack_op->precedence)
+				)
 			) {
 				out_add(stack_op);
 			}

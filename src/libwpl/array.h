@@ -28,38 +28,49 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "types.h"
+#include "typenames.h"
+#include "type_template.h"
+#include "type_precedence.h"
 #include "exception.h"
 #include "io.h"
 
 #include <vector>
 
 class wpl_value;
+class wpl_state;
+class wpl_namespace_session;
 
 /**
  * @brief Array implementation
  */
 class wpl_array {
+	friend class wpl_program;
+	friend class wpl_value_get;
+	friend class wpl_value_post;
+
 	vector<wpl_value*> array;
 
 	public:
-	void set(int index, wpl_value *value);
-	void push(wpl_value *value);
+	void clear();
+	int size() const {
+		return array.size();
+	}
+	const wpl_value *get_readonly(int index) const;
 
 	protected:
 	wpl_array () {};
 	wpl_array (const wpl_array &copy);
+	void pop();
+	void set(int index, wpl_value *value);
 	wpl_value *get(int index);
+	void push(wpl_value *value);
 	void replace (wpl_array &new_array);
 	void output_json(wpl_io &io);
 	~wpl_array();
-	int size() {
-		return array.size();
-	}
 	void reserve(int i) {
 		array.reserve(i);
 	}
-	void notify_destructor(wpl_namespace_session *nss, wpl_io &io);
+	void notify_destructor(wpl_state *state, wpl_namespace_session *nss, wpl_io &io);
 };
 
 /**
@@ -104,7 +115,7 @@ class wpl_type_array : public wpl_type_template {
 		return new wpl_type_array(*this);
 	}
 
-	wpl_type_complete_template *new_instance (const wpl_type_complete *template_type) const {
+	wpl_type_array_instance *new_instance (const wpl_type_complete *template_type) const {
 		return new wpl_type_array_instance(this, template_type);
 	}
 };

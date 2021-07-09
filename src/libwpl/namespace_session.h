@@ -43,9 +43,12 @@ enum {
 	WPL_NSS_CTX_OUTSIDE
 };
 
+class wpl_state;
+class wpl_scene;
 class wpl_template;
 class wpl_expression_state;
 class wpl_value_unresolved_identifier;
+class wpl_type_complete;
 
 /**
  * @brief This class is passed into all runables which are called with the run() function. The runables copy their identifiers into this temporary namespace. The namespace session creates a child of itself when a runable calls another runable.
@@ -86,7 +89,7 @@ class wpl_namespace_session {
 	wpl_namespace_session();
 	~wpl_namespace_session();
 
-	void notify_destructors(wpl_io &io);
+	void notify_destructors(wpl_state *state);
 
 	void use_this_and_parent() {
 		this_and_parent = true;
@@ -98,6 +101,7 @@ class wpl_namespace_session {
 
 	bool set_variables_from_expression (wpl_expression_state *exp_state, int discard_pos);
 	void replace_variables (wpl_namespace_session *source);
+	void reset_variables();
 
 	void push(wpl_variable *variable);
 
@@ -105,6 +109,8 @@ class wpl_namespace_session {
 	virtual wpl_variable *find_variable(const char *name, int ctx);
 	wpl_function *find_function_no_parent(const char *name, int ctx);
 	wpl_template *find_template (const char *name);
+	wpl_scene *find_scene (const char *name);
+	const wpl_type_complete *find_complete_type (const char *name);
 
 	virtual int do_operator_on_unresolved (
 		wpl_value_unresolved_identifier *unresolved,
@@ -116,7 +122,7 @@ class wpl_namespace_session {
 	wpl_variable *get_variable(int i);
 	int variable_index(const char *name);
 
-	void variable_list(list<wpl_variable*> &target) {
+	void variable_list(vector<wpl_variable*> &target) {
 		for (unique_ptr<wpl_variable> &variable : variables_ptr) {
 			target.push_back(variable.get());
 		}

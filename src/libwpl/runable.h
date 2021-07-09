@@ -2,7 +2,7 @@
 
 -------------------------------------------------------------
 
-Copyright (c) MMXIII Atle Solbakken
+Copyright (c) MMXIII-MMXIV Atle Solbakken
 atle@goliathdns.no
 
 -------------------------------------------------------------
@@ -30,17 +30,9 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
 
-#include "matcher.h"
-#include "namespace_session.h"
-#include "operator_return_values.h"
-#include "debug.h"
-
-using namespace std;
-
 class wpl_state;
 class wpl_value;
-struct wpl_operator;
-class wpl_namespace;
+class wpl_namespace_session;
 class wpl_io;
 
 class wpl_runable {
@@ -48,5 +40,8 @@ class wpl_runable {
 	public:
 	virtual ~wpl_runable() {};
 	virtual int run(wpl_state *state, wpl_value *res) = 0;
-	virtual wpl_state *new_state(wpl_namespace_session *nss, wpl_io *io);
+	virtual int run(wpl_state *state, wpl_value *res, int loop_number) {
+		return run(state, res);
+	}
+	virtual wpl_state *new_state(wpl_state *parent, wpl_namespace_session *nss, wpl_io *io);
 };

@@ -41,12 +41,20 @@ class wpl_io {
 	char buf[256];
 
 	public:
+	wpl_io (const wpl_io &copy) = delete;
+	wpl_io () {}
+
 	wpl_io &operator<< (const char *rhs) {
 		write(rhs, strlen(rhs));
 		return *this;
 	}
 	wpl_io &operator<< (const string &rhs) {
 		write(rhs.c_str(), rhs.size());
+		return *this;
+	}
+	wpl_io &operator<< (const int &rhs) {
+		sprintf(buf, "%ld", rhs);
+		write(buf, strlen(buf));
 		return *this;
 	}
 	wpl_io &operator<< (const long int &rhs) {
@@ -93,6 +101,7 @@ class wpl_io {
 	virtual const char *get_env (const char *name) = 0;
 	virtual void http_header(const char *field, const char *str) = 0;
 	virtual void debug (const char *str) = 0;
+	virtual void error (const char *str) = 0;
 
 	virtual void write_immortal (const char *str, int len) {
 		write(str, len);
@@ -116,11 +125,16 @@ class wpl_io_standard : public wpl_io {
 	void debug (const char *str) override {
 		std::cerr << str;
 	}
+
+	void error (const char *str) override {
+		std::cerr << str;
+	}
 };
 
 class wpl_io_string_wrapper : public wpl_io {
 	private:
 	string &target;
+
 	public:
 	wpl_io_string_wrapper (string &target) :
 		target(target)
@@ -139,6 +153,15 @@ class wpl_io_string_wrapper : public wpl_io {
 	}
 	void debug (const char *str) override {
 		throw runtime_error("wpl_io_string_wrapper::debug(): Not supported");
+	}
+	void error (const char *str) override {
+		throw runtime_error("wpl_io_string_wrapper::error(): Not supported");
+	}
+	const char *c_str() const {
+		return target.c_str();
+	}
+	int size() const {
+		return target.size();
 	}
 };
 
@@ -167,6 +190,10 @@ class wpl_io_buffer : public wpl_io {
 		buffer += string(str);
 	}
 
+	void error (const char *str) override {
+		debug(str);
+	}
+
 	void output (wpl_io &target) {
 		target.write(buffer);
 	}
@@ -187,4 +214,5 @@ class wpl_io_void : public wpl_io {
 	const char *get_env (const char *name) { throw runtime_error("wpl_io_dummy::get_env(): Not supported"); }
 	void http_header(const char *field, const char *str) {}
 	void debug (const char *str) {}
+	void error (const char *str) {}
 };

@@ -43,7 +43,6 @@ class wpl_runable;
 class wpl_expression_child_state {
 	unique_ptr<wpl_state> state;
 	void *unique;
-
 	public:
 	wpl_expression_child_state() : state() {
 		unique = NULL;
@@ -70,14 +69,20 @@ class wpl_expression_state : public wpl_state {
 	vector<wpl_expression_child_state> child_states;
 
 	void optimize();
+	int loop_number = 0;
+	int flags = 0;
 
 	public:
+	static const int CTX_NONE = 0;
+	static const int CTX_LOOP = 1;
+
 	wpl_expression_state (
+			wpl_state *parent,
 			wpl_namespace_session *nss,
 			wpl_io *io,
 			const wpl_exp_deque<shunting_yard_carrier> &my_list
 			) :
-		wpl_state(nss, io),
+		wpl_state(parent, nss, io),
 		run_stack(my_list),
 		wait_stack(),
 		discard_chain(),
@@ -87,12 +92,19 @@ class wpl_expression_state : public wpl_state {
 		run_stack.save_pos();
 	}
 
-	wpl_namespace_session *get_nss() {
-		return nss;
+	// Used for internal dummy states where we have no real expression in the program
+	wpl_expression_state (const wpl_state *state) :
+		wpl_state(*state),
+                run_stack(),
+                wait_stack(),
+                discard_chain(),
+                child_states()
+	{
+		run_stack.save_pos();
 	}
 
 	wpl_variable *find_variable (const char *name) {
-		return nss->find_variable(name, WPL_NSS_CTX_SELF);
+		return get_nss()->find_variable(name, WPL_NSS_CTX_SELF);
 	}
 
 	wpl_state *get_child_state(int index) {
@@ -128,6 +140,22 @@ class wpl_expression_state : public wpl_state {
 
 	void unpop() {
 		run_stack.unpop();
+	}
+
+	void push_extra(shunting_yard_carrier ca) {
+		run_stack.push_front(ca);
+		run_stack.save_pos();
+
+		child_states.clear();
+		child_states.resize(run_stack.size());
+	}
+
+	void push_extra(const wpl_operator_struct *op) {
+		push_extra(shunting_yard_carrier(op));
+	}
+
+	void push_extra(wpl_value *value) {
+		push_extra(shunting_yard_carrier(value));
 	}
 
 	wpl_exp_deque<shunting_yard_carrier> &get_stack() {
@@ -177,7 +205,12 @@ class wpl_expression_state : public wpl_state {
 	}
 
 	// RUNNING
-	int run_child (wpl_runable *runable, int index, wpl_value *final_result);
+	int run_runable_operator (
+			wpl_runable_operator *runable,
+			int index,
+			wpl_value *lhs,
+			wpl_value *rhs,
+			wpl_value *final_result);
 	int run_function (
 		wpl_function *function,
 		int index,
@@ -190,11 +223,24 @@ class wpl_expression_state : public wpl_state {
 		wpl_value_unresolved_identifier *unresolved,
 		wpl_value *final_result
 	) {
-		return nss->do_operator_on_unresolved (
+		return get_nss()->do_operator_on_unresolved (
 			unresolved,
 			this,
 			final_result,
 			WPL_NSS_CTX_SELF
 		);
+	}
+
+	void set_loop_number(int loop_number) {
+		flags |= CTX_LOOP;
+		this->loop_number = loop_number;
+	}
+
+	int get_loop_number() {
+		return loop_number;
+	}
+
+	int get_flags() {
+		return flags;
 	}
 };

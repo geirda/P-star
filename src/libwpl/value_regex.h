@@ -142,7 +142,7 @@ class wpl_value_regex : public wpl_value, public wpl_matcher {
 	void parse_replacement();
 
 	public:
-	PRIMITIVE_TYPEINFO(regex)
+	PRIMITIVE_TYPEATTR(regex)
 	wpl_value_regex() {
 		quote_inline_variables = false;
 		do_global = false;
@@ -153,6 +153,10 @@ class wpl_value_regex : public wpl_value, public wpl_matcher {
 
 	wpl_value *clone() const {
 		return new wpl_value_regex(*this);
+	}
+
+	virtual string toStringDBG() override {
+		return "{regex}";
 	}
 
 	bool do_pattern_match (

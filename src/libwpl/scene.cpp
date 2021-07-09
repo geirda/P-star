@@ -2,7 +2,7 @@
 
 -------------------------------------------------------------
 
-Copyright (c) MMXIII Atle Solbakken
+Copyright (c) MMXIII-MMXIV Atle Solbakken
 atle@goliathdns.no
 
 -------------------------------------------------------------
@@ -29,8 +29,8 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 #include "scene.h"
 #include "scene_state.h"
 
-wpl_state *wpl_scene::new_state(wpl_namespace_session *nss, wpl_io *io) {
-	return new wpl_scene_state(nss, io, this, base_scenes);
+wpl_state *wpl_scene::new_state(wpl_state *parent, wpl_namespace_session *nss, wpl_io *io) {
+	return new wpl_scene_state(parent, nss, io, this, base_scenes);
 }
 
 int wpl_scene::run (wpl_state *state, wpl_value *final_result) {
@@ -42,4 +42,13 @@ int wpl_scene::run (wpl_state *state, wpl_value *final_result) {
 		ret = scene_state->run_base_scene(base, index++, final_result);
 	}
 	return wpl_block::run(state, final_result);
+}
+	
+wpl_type_complete *wpl_scene::find_complete_type(const char *name) const {
+	for (auto it : base_scenes) {
+		if (wpl_type_complete *ret = it->find_complete_type(name)) {
+	 		return ret;
+		}
+	}
+	return wpl_namespace::find_complete_type(name);
 }

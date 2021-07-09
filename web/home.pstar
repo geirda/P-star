@@ -1,10 +1,7 @@
 #!/usr/bin/wpl -f
 
-#INCLUDE layout.pstar;
-#INCLUDE news.pstar;
-
 HTML_TEMPLATE body {
-	<div id="fb-root"></div>
+	<div id="followbox">
 	<script>(function(d, s, id) {
 	  var js, fjs = d.getElementsByTagName(s)[0];
 	  if (d.getElementById(id)) return;
@@ -12,10 +9,9 @@ HTML_TEMPLATE body {
 	  js.src = "//connect.facebook.net/nb_NO/all.js#xfbml=1";
 	  fjs.parentNode.insertBefore(js, fjs);
 	}(document, 'script', 'facebook-jssdk'));</script>
-	<div style="float: right">
-		<div class="g-follow" data-annotation="bubble" data-height="20" data-href="//plus.google.com/105062947022242379130" data-rel="publisher"></div>
-		<div class="fb-like" data-href="https://www.facebook.com/PStarOrg" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
-	</div>
+	<div class="g-follow" data-annotation="bubble" data-height="20" data-href="//plus.google.com/105062947022242379130" data-rel="publisher"></div>
+	<div style="clear: both"></div>
+	<div class="fb-like" data-href="https://www.facebook.com/PStarOrg" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
 	<script type="text/javascript">
 	  (function() {
 	    var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
@@ -23,12 +19,23 @@ HTML_TEMPLATE body {
 	    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
 	  })();
 	</script>
+	<div><a href="https://twitter.com/PStarWPL" class="twitter-follow-button" data-show-count="false">Follow @PStarWPL</a></div>
+	<script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+	</div>
 }
 
-HTML_TEMPLATE what_is {
-	<h1>What is P*?</h1>
+HTML_TEMPLATE home {
+	<h2>What is P*?</h2>
 	<p>P* (pronounced P-star) is a programming language specifically designed for web development. P* provides easy in-language support for common tasks in this field.</p>
 	<p>P* programs are scripts, and they are run by the P* interpreter, which you can download under <a href="/cgi-bin/how_to_get">How to get P*?</a>.</p>
+}
+
+HTML_TEMPLATE pstar_pages {
+	<h2>Sites running P*</h2>
+	<p>Currently the only known site running P* is this page. Have you created something? <a href="mailto:atle@goliathdns.no">Contact me</a> and have it listed here to show off!</p>
+	<ul>
+		<li><a href="http://www.p-star.org">P* Home Page</a></li>
+	</ul>
 }
 
 HTML_TEMPLATE run_environments {
@@ -54,26 +61,40 @@ HTML_TEMPLATE important_features {
 
 HTML_TEMPLATE support {
 	<h2>Support and discussion</h2>
-	<p>There are two public maling lists available. One is for user questions and opinions, and the other is for more technical discussion about development.</p>
+	<p>There are two public mailing lists available. One is for user questions and opinions, and the other is for more technical discussion about development.</p>
 	<ul>
 		<li><a href="https://groups.google.com/forum/#!forum/p-star-users">Signup for the user list</a></li>
 		<li><a href="https://groups.google.com/forum/#!forum/p-star-dev">Signup for the development list</a></li>
 	</ul>
 	<h2>Bugs &amp; issues</h2>
-	<p>Please report bugs and missing features on <a href="https://github.com/atlesn/P-star/issues">the Github page</a> or by writing to the <a href="mailto:p-star-dev@googlegroups.com">development mailing list</a>.</p>
-	<h2>Development</h2>
+	<p>Please report bugs and missing features on <a href="https://github.com/P-star/P-star/issues">the Github page</a> or by writing to the <a href="mailto:p-star-dev@googlegroups.com">development mailing list</a>.</p>
+}
+	
+HTML_TEMPLATE development {
+	<div>
+	<h2>Help needed!</h2>
+	<img style="float: right" width="120px" src="patch.svg" />
 	<p>The P* language is still under development, but it already supports many features. <b>Help is needed to develop P* further.</b> If you have experience with C++ and/or web design, don't hesitate to say hello on one of the mailing lists or contact the author at <a href="mailto:atle@goliathdns.no">atle@goliathdns.no</a></p>
+	<p>Checkout the latest source code on the <a href="https://github.com/P-star/P-star">P* GitHub repository</a>. Maybe you can find an <a href="https://github.com/P-star/P-star/issues">issue</a> there to work on?</p>
+	</div>
 }
 
-SCENE main {
-	#CONTENT_TYPE text/html;
-	#SCENE layout_head_scene;
+#INCLUDE news.pstar;
+
+SCENE page {
 	#HTML_TEMPLATE body;
-	#HTML_TEMPLATE what_is;
+	#HTML_TEMPLATE home;
+	#HTML_TEMPLATE development;
+	#HTML_TEMPLATE pstar_pages;
 	#HTML_TEMPLATE important_features;
 	#SCENE news;
 	#HTML_TEMPLATE support;
-	#HTML_TEMPLATE layout_foot;
+}
+
+#INCLUDE layout.pstar;
+
+SCENE main {
+	#SCENE layout_nocolumns;
 	return 0;
 }
 

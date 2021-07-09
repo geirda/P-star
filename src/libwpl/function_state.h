@@ -30,7 +30,7 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "state.h"
 #include "value.h"
-#include "types.h"
+#include "type.h"
 #include "namespace_session.h"
 #include "block_state.h"
 #include "value_struct.h"
@@ -48,23 +48,25 @@ class wpl_function_state : public wpl_state, public wpl_namespace_session {
 
 	public:
 	wpl_function_state (
+		wpl_state *parent,
 		wpl_namespace_session *nss_this,
 		wpl_io *io,
 		wpl_namespace *template_namespace,
 		const wpl_type_complete *return_type
 	) :
-		wpl_state(nss_this, io),
+		wpl_state(parent, nss_this, io),
 		wpl_namespace_session(nss_this, nss_this, template_namespace, WPL_NSS_CTX_SELF),
 		return_value(return_type->new_instance())
 	{}
 	wpl_function_state (
+		wpl_state *parent,
 		wpl_namespace_session *nss_call_ctx,
 		wpl_namespace_session *nss_this,
 		wpl_io *io,
 		wpl_namespace *template_namespace,
 		const wpl_type_complete *return_type
 	) :
-		wpl_state(nss_this, io),
+		wpl_state(parent, nss_this, io),
 		wpl_namespace_session(nss_call_ctx, nss_this, template_namespace, WPL_NSS_CTX_SELF),
 		return_value(return_type->new_instance())
 	{}

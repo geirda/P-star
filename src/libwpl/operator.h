@@ -2,7 +2,7 @@
 
 -------------------------------------------------------------
 
-Copyright (c) MMXIII Atle Solbakken
+Copyright (c) MMXIII-MMXIV Atle Solbakken
 atle@goliathdns.no
 
 -------------------------------------------------------------
@@ -28,19 +28,34 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "value.h"
-#include "namespace_session.h"
 #include "operator_return_values.h"
-#include "operator_types.h"
+
+class wpl_value;
+class wpl_runable_operator;
+class wpl_expression_state;
 
 struct wpl_operator_struct {
 	union {
 		const char *op;
 		const char *name;
 	};
+
 	const int precedence;
 	const int flags;
 	const int length;
+
+	virtual wpl_runable_operator *new_runable (
+			wpl_expression_state *exp_state,
+			wpl_value *lhs,
+			wpl_value *rhs
+	) const;
+
+	wpl_operator_struct(const char *op, int precedence, int flags, int length) :
+		op(op),
+		precedence(precedence),
+		flags(flags),
+		length(length)
+	{}
 };
 
 #define WPL_OP_F_NONE		0
@@ -52,23 +67,30 @@ struct wpl_operator_struct {
 #define WPL_OP_F_HAS_RHS	(1<<3)
 #define WPL_OP_F_OPTIONAL_LHS	(1<<4)
 #define WPL_OP_F_OPTIONAL_RHS	(1<<5)
+#define WPL_OP_F_HAS_RUNABLE	(1<<6)
+
+#define WPL_OP_F_LEFT_BOTH	(1<<7)
+#define WPL_OP_F_LEFT_ONE	(1<<8)
+#define WPL_OP_F_RIGHT_BOTH	(1<<9)
+#define WPL_OP_F_RIGHT_ONE	(1<<10)
 
 #define WPL_OP_F_ASSOC_ALL	(WPL_OP_F_ASSOC_LEFT|WPL_OP_F_ASSOC_RIGHT)
 
 #define WPL_OP_F_HAS_BOTH	(WPL_OP_F_HAS_LHS|WPL_OP_F_HAS_RHS)
-#define WPL_OP_F_LEFT_BOTH	(WPL_OP_F_ASSOC_LEFT|WPL_OP_F_HAS_BOTH)
-#define WPL_OP_F_LEFT_ONE	(WPL_OP_F_ASSOC_LEFT|WPL_OP_F_HAS_LHS)
 
-#define WPL_OP_F_RIGHT_BOTH	(WPL_OP_F_ASSOC_RIGHT|WPL_OP_F_HAS_BOTH)
-#define WPL_OP_F_RIGHT_ONE	(WPL_OP_F_ASSOC_RIGHT|WPL_OP_F_HAS_RHS)
+#define WPL_OP_F_LEFT_BOTH_BIG	(WPL_OP_F_LEFT_BOTH|WPL_OP_F_ASSOC_LEFT|WPL_OP_F_HAS_BOTH)
+#define WPL_OP_F_LEFT_ONE_BIG	(WPL_OP_F_LEFT_ONE|WPL_OP_F_ASSOC_LEFT|WPL_OP_F_HAS_LHS)
 
+#define WPL_OP_F_RIGHT_BOTH_BIG	(WPL_OP_F_RIGHT_BOTH|WPL_OP_F_ASSOC_RIGHT|WPL_OP_F_HAS_BOTH)
+#define WPL_OP_F_RIGHT_ONE_BIG	(WPL_OP_F_RIGHT_ONE|WPL_OP_F_ASSOC_RIGHT|WPL_OP_F_HAS_RHS)
+/*
 #define WPL_OP_LEFT_PRECEDENCE(v) (	\
 	(v->precedence == 2) ||		\
 	(v->precedence == 3) ||		\
 	(v->precedence == 16) ||	\
 	(v->precedence >= 19)		\
 )
-
+*/
 #define WPL_OP_IS_LEFT_ASSOC(v) \
 	(v & WPL_OP_F_ASSOC_LEFT)
 #define WPL_OP_IS_RIGHT_ASSOC(v) \

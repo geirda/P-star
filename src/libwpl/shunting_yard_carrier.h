@@ -2,7 +2,7 @@
 
 -------------------------------------------------------------
 
-Copyright (c) MMXIII Atle Solbakken
+Copyright (c) MMXIII-MMXIV Atle Solbakken
 atle@goliathdns.no
 
 -------------------------------------------------------------
@@ -28,6 +28,9 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include "runable_operator.h"
+
+#include <memory>
 #include <cstddef>
 
 using namespace std;
@@ -38,11 +41,9 @@ class wpl_value;
 struct shunting_yard_carrier {
 	wpl_value *value;
 	const wpl_operator_struct *op;
+	shared_ptr<wpl_runable_operator> runable;
 
-	shunting_yard_carrier() {
-		this->value = NULL;
-		this->op = NULL;
-	}
+	shunting_yard_carrier() {}
 	shunting_yard_carrier(wpl_value *value) {
 		this->value = value;
 		this->op = NULL;

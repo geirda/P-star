@@ -29,10 +29,12 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 #include "value.h"
 #include "value_bool.h"
 #include "value_string.h"
+#include "pointer.h"
 #include "type_precedence.h"
 #include "expression_state.h"
 #include "operator.h"
 
+/*
 wpl_value_return::~wpl_value_return() {
 #ifdef WPL_DEBUG_DESTRUCTION
 	DBG("VR (" << this << "): Destructing return value, no delete is " << do_delete << endl);
@@ -49,7 +51,6 @@ wpl_value *wpl_value_return::iterate() {
 	}
 	return value->next();
 }
-
 void wpl_value_return::set(wpl_value *new_value, int flags) {
 	if (value && do_delete) {
 		value->suicide();
@@ -69,8 +70,32 @@ int wpl_value_return::run(wpl_value **final_result) {
 		return WPL_OP_NO_RETURN;
 	}
 }
+*/
+void wpl_value::invalidate_pointers() {
+	for (auto ptr : pointers) {
+		ptr->value_dies_now();
+	}
+}
+
+void wpl_value::register_pointer(wpl_pointer *ptr) {
+	pointers.push_back(ptr);
+}
+
+void wpl_value::remove_pointer(wpl_pointer *ptr) {
+	for (auto it = pointers.begin(); it != pointers.end(); ++it) {
+		if (*it == ptr) {
+			pointers.erase(it);
+			break;
+		}
+	}
+}
+
+void wpl_value::suicide() {
+	delete this;
+}
 
 wpl_value::~wpl_value() {
+	invalidate_pointers();
 #ifdef WPL_DEBUG_DESTRUCTION
 	DBG("V (" << this << "): Destructing value\n");
 #endif
@@ -87,18 +112,50 @@ int wpl_value::do_fastop (
 		)
 {
 //	cout << "V (" << this << "): do_fastop with " << exp_state->get_stack().size() << " on stack (type is " << get_type_name() << ") value is " << toString() << " op is " << op->name << "\n" ;
+	int ret;
+
 	if ((op->flags & WPL_OP_F_HAS_BOTH) != WPL_OP_F_HAS_BOTH) {
-		return do_operator(exp_state, final_result, op, this, this);
+		ret = do_operator(exp_state, final_result, op, this, this);
 	}
-	if (op->flags & WPL_OP_F_OPTIONAL_LHS) {
-		return do_operator(exp_state, final_result, op, NULL, this);
+	else if (op->flags & WPL_OP_F_OPTIONAL_LHS) {
+		ret = do_operator(exp_state, final_result, op, NULL, this);
 	}
-	if (op->flags & WPL_OP_F_OPTIONAL_RHS) {
-		return do_operator(exp_state, final_result, op, this, NULL);
+	else if (op->flags & WPL_OP_F_OPTIONAL_RHS) {
+		ret = do_operator(exp_state, final_result, op, this, NULL);
+	}
+	else {
+		cerr << "While doing fastop '" << op->name << "'" << " on value of type " << get_type_name() << " value " << toString() << endl;
+		throw runtime_error("Too few operands for operator");
 	}
 
-	cerr << "While doing fastop '" << op->name << "'" << " on value of type " << get_type_name() << " value " << toString() << endl;
-	throw runtime_error("Too few operands for operator");
+	if (ret & WPL_OP_UNKNOWN) {
+		cerr << "While running fastop '" << op->name << "' on type '" <<
+			get_type_name() << "' in expression:\n";
+		throw runtime_error("Unknown operator for type");
+	}
+
+	return ret;
+}
+
+int wpl_value::do_operator_discard (
+		wpl_expression_state *exp_state,
+		wpl_value *discarded,
+		wpl_value *final_result
+){
+	exp_state->push_discard(discarded);
+	if (exp_state->empty()) {
+		return WPL_OP_OK;
+	}
+
+	shunting_yard_carrier next = exp_state->top();
+	if (!next.value){
+		throw runtime_error("Operator can't follow discard operator");
+	}
+	exp_state->pop();
+
+	return next.value->do_operator_recursive (
+		exp_state, final_result
+	);
 }
 
 int wpl_value::do_operator_recursive (
@@ -112,7 +169,7 @@ int wpl_value::do_operator_recursive (
 //		cout << "- no more elements\n";
 		if (!exp_state->empty_waiting()) {
 			while (!exp_state->empty_waiting()) {
-				cerr << "- " << exp_state->top_waiting() << endl;
+//				cerr << "- " << exp_state->top_waiting() << endl;
 				exp_state->pop_waiting();
 			}
 			throw runtime_error("Operands remains in expression after all operators have completed");
@@ -131,7 +188,7 @@ int wpl_value::do_operator_recursive (
 		return WPL_OP_OK;
 	}
 
-	shunting_yard_carrier first_carrier = exp_state->top();
+	shunting_yard_carrier &first_carrier = exp_state->top();
 	exp_state->pop();
 
 	const wpl_operator_struct *op = first_carrier.op;
@@ -171,14 +228,14 @@ int wpl_value::do_operator_recursive (
 	wpl_value *lhs = NULL;
 	wpl_value *rhs = NULL;
 
-	//cout << "- found op " << op->name << endl;
+//	cout << "- found op " << op->name << endl;
 
 	if ((op->flags & WPL_OP_F_HAS_BOTH) == WPL_OP_F_HAS_BOTH) {
 		wpl_value *prevprev = NULL;
 		if (!exp_state->empty_waiting()) {
 			prevprev = exp_state->top_waiting();
 			exp_state->pop_waiting();
-			//cout << "Got from waiting queue: " << prevprev << endl;
+//			cout << "Got from waiting queue: " << prevprev->get_type_name() << endl;
 		}
 		if (!prevprev && !(op->flags & (WPL_OP_F_OPTIONAL_LHS|WPL_OP_F_OPTIONAL_RHS))) {
 			cerr << "While running operator '" << op->name << "' with prevprev '" << prevprev << "':\n";
@@ -212,35 +269,38 @@ int wpl_value::do_operator_recursive (
 			preferred = rhs;
 		}
 	}
-	else if (op == &OP_ELEMENT) {
+	else if (op->flags & WPL_OP_F_ASSOC_LEFT) {
 		preferred = lhs;
 	}
-	else if (!rhs) {
-		preferred = lhs;
-	}
-	else if (!lhs) {
+	else if (op->flags & WPL_OP_F_ASSOC_RIGHT) {
 		preferred = rhs;
 	}
-	else if (WPL_OP_LEFT_PRECEDENCE (op)) {
-		preferred = lhs;
-	}
-/*	else if (rhs->get_precedence() > lhs->get_precedence()) {
-		preferred = rhs;
-	}
-	else if (lhs->get_precedence() > rhs->get_precedence()) {
-		preferred = lhs;
-	}*/
 	else {
-		preferred = lhs;
+		ostringstream msg;
+		msg << "Don't know which value to run operator " << op->name << " on!!\n";
+		throw runtime_error(msg.str());
 	}
 
-/*	cout << "- preferred is " << preferred->get_type_name() << endl;
-	cout << "- lhs type is " << (lhs?lhs->get_type_name():"-") << endl;
-	cout << "- rhs type is " << (rhs?rhs->get_type_name():"-") << endl;
+/*	cout << "- preferred is " << preferred << " - " << preferred->get_type_name() << endl;
+	cout << "- lhs type is  " << lhs       << " - " << (lhs?lhs->get_type_name():"-") << endl;
+	cout << "- rhs type is  " << rhs       << " - " << (rhs?rhs->get_type_name():"-") << endl;
 	cout << "- calling operator " << op->name << "\n";*/
 
 	int ret_op;
-	if (op == &OP_PATTERN_EQ || op == &OP_PATTERN_NOT_EQ) {
+	if (op->flags & WPL_OP_F_HAS_RUNABLE) {
+		if (first_carrier.runable.get() == nullptr) {
+			wpl_runable_operator *runable = op->new_runable(exp_state, lhs, rhs);
+			first_carrier.runable.reset(runable);
+		}
+		ret_op = exp_state->run_runable_operator(
+				first_carrier.runable.get(),
+				exp_state->pos()+1,
+				lhs,
+				rhs,
+				final_result
+		);
+	}
+	else if (op == &OP_PATTERN_EQ || op == &OP_PATTERN_NOT_EQ) {
 		ret_op = preferred->do_regex(exp_state, final_result, op, lhs, rhs);
 	}
 	else {
@@ -286,5 +346,25 @@ int wpl_value::do_regex (
 	wpl_value_bool result(match);
 
 	return result.do_operator_recursive(exp_state, final_result);
+}
+
+wpl_value_template::wpl_value_template (
+		wpl_namespace_session *nss,
+		shared_ptr<const wpl_type_complete> mother_type,
+		const wpl_type_complete *template_type
+) : wpl_value() {
+	const wpl_type_complete *tmp;
+
+	/*
+	   If this type doesn't exist in the namespace, we must hold memory
+	   for it inside this class
+	   */
+	if (!(tmp = nss->find_complete_type(mother_type->get_name()))) {
+		temporary_type = mother_type;
+		tmp = mother_type.get();
+	}
+
+	this->container_type = tmp;
+	this->template_type = template_type;
 }
 

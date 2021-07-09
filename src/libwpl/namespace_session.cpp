@@ -34,22 +34,40 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 #include "function.h"
 #include "variable.h"
 
-void wpl_namespace_session::notify_destructors(wpl_io &io) {
+void wpl_namespace_session::notify_destructors(wpl_state *state) {
 	for (auto it = variables_ptr.rbegin(); it != variables_ptr.rend(); it++) {
 		wpl_variable *var = (*it).get();
-		var->get_value()->notify_destructor(this, io);
+		var->get_value()->notify_destructor(state, this, state->get_io());
 	}
 }
 
 void wpl_namespace_session::replace_variables (wpl_namespace_session *source) {
-	list<wpl_variable*> variables;
+	vector<wpl_variable*> variables;
 	source->variable_list(variables);
 
-	variables_ptr.clear();
-	variables_ptr.reserve(variables.size());
+	if (variables.size() != variables_ptr.size()) {
+		throw runtime_error("Size mismatch in wpl_namespace_session::replace_variables (BUG)");
+	}
 
-	for (wpl_variable *variable : variables) {
-		push (variable->clone());
+	for (int i = 0; i < variables.size(); i++) {
+		wpl_value *source = variables[i]->get_value();
+
+		if (source->isArray() || source->isStruct()) {
+			if (!variables_ptr[i]->set_strong(source)) {
+				throw runtime_error("Strong set failed in wpl_namespace_session::replace_variables (BUG)");
+			}
+		}
+		else {
+			variables_ptr[i]->set_weak(source);
+		}
+	}
+}
+
+void wpl_namespace_session::reset_variables() {
+	for (int i = 0; i < variables_ptr.size(); i++) {
+		wpl_value *value = variables_ptr[i]->get_value();
+
+		value->reset();
 	}
 }
 
@@ -203,11 +221,13 @@ wpl_namespace_session::~wpl_namespace_session() {
 	vector<unique_ptr<wpl_variable>>::reverse_iterator it =
 		variables_ptr.rbegin();
 	for (; it != variables_ptr.rend(); it++) {
+//		cerr << "NS(" << (void*)this << ") destroy variable " << (void*) (*it).get() << " " << (*it)->get_name() << endl;
 		(*it).reset(NULL);
 	}
 }
 
 void wpl_namespace_session::push (wpl_variable *variable) {
+//	cerr << "NS(" << (void*)this << ") push variable " << (void*) variable << " " << variable->get_name() << endl;
 	this->variables_ptr.emplace_back(variable);
 }
 
@@ -345,11 +365,35 @@ wpl_function *wpl_namespace_session::find_function_no_parent(const char *name, i
 	return NULL;
 }
 
+wpl_scene *wpl_namespace_session::find_scene(const char *name) {
+	if (!template_namespace) {
+		return NULL;
+	}
+	return template_namespace->find_scene(name);
+}
+
 wpl_template *wpl_namespace_session::find_template(const char *name) {
 	if (!template_namespace) {
 		return NULL;
 	}
 	return template_namespace->find_template(name);
+}
+
+const wpl_type_complete *wpl_namespace_session::find_complete_type(const char *name) {
+	const wpl_type_complete *ret;
+
+	/* Look everywhere to find the type */
+	if (nss_this && (ret = nss_this->find_complete_type(name))) {
+		return ret;
+	}
+	if (template_namespace && (ret = template_namespace->find_complete_type(name))) {
+		return ret;
+	}
+	if (parent && (ret = parent->find_complete_type(name))) {
+		return ret;
+	}
+
+	return NULL;
 }
 
 int wpl_namespace_session::do_operator_on_unresolved (

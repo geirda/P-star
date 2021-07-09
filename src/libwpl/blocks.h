@@ -37,4 +37,5 @@ static const char *wpl_blockname_else_if = 	"else if";
 static const char *wpl_blockname_else = 	"else";
 static const char *wpl_blockname_while = 	"while";
 static const char *wpl_blockname_for =	 	"for";
+static const char *wpl_blockname_foreach = 	"foreach";
 

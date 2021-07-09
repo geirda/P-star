@@ -29,13 +29,14 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "sql.h"
-#include "../libwpl/types.h"
+#include "../libwpl/type_parse_signals.h"
 #include "../libwpl/exception.h"
 #include "../libwpl/namespace.h"
 #include "../libwpl/namespace_session.h"
 #include "../libwpl/variable.h"
 #include "value_sql.h"
 #include "../libwpl/value_constant_pointer.h"
+#include "../libwpl/io.h"
 
 #include <string>
 #include <iostream>
@@ -46,7 +47,9 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 void wpl_sql::get_params(wpl_text_state *text_state, vector<wpl_value*> &params) {
 	for (wpl_text_chunk_it it (chunks); it; it.inc()) {
 		wpl_value_constant_pointer retriever;
-		if (!(it->run_raw(text_state, it.get_pos(), &retriever) & WPL_OP_OK)) {
+		wpl_io_void io;
+
+		if (!(it->run(text_state, it.get_pos(), &retriever, io) & WPL_OP_OK)) {
 			wpl_value *value = retriever.dereference();
 			continue;
 		}
@@ -76,6 +79,7 @@ void wpl_sql::get_stmt_string(string &result) {
 
 void wpl_sql::parse_value (wpl_namespace *parent_namespace) {
 	char buf[WPL_VARNAME_SIZE];
+	ignore_whitespace();
 	get_word(buf);
 
 	wpl_sql *sql = new wpl_sql();
@@ -90,8 +94,6 @@ void wpl_sql::parse_value (wpl_namespace *parent_namespace) {
 	sql->load_position(get_position());
 	sql->__parse_value(parent_namespace);
 	load_position(sql->get_position());
-
-	throw wpl_type_end_statement(get_position());
 }
 
 void wpl_sql::__parse_value (wpl_namespace *parent_namespace) {

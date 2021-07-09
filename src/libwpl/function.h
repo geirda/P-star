@@ -2,7 +2,7 @@
 
 -------------------------------------------------------------
 
-Copyright (c) MMXIII Atle Solbakken
+Copyright (c) MMXIII-MMXIV Atle Solbakken
 atle@goliathdns.no
 
 -------------------------------------------------------------
@@ -28,7 +28,6 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "types.h"
 #include "runable.h"
 #include "namespace.h"
 #include "identifier.h"
@@ -41,6 +40,7 @@ using namespace std;
 
 class wpl_value;
 class wpl_block;
+class wpl_type_complete;
 
 class wpl_function : public wpl_identifier_access_holder, public wpl_runable, public wpl_namespace {
 	private:
@@ -72,8 +72,9 @@ class wpl_function : public wpl_identifier_access_holder, public wpl_runable, pu
 		return true;
 	}
 
-	wpl_state *new_state(wpl_namespace_session *nss_this, wpl_io *io);
+	wpl_state *new_state(wpl_state *parent, wpl_namespace_session *nss_this, wpl_io *io);
 	wpl_state *new_state(
+			wpl_state *parent, 
 			wpl_namespace_session *nss_call_ctx,
 			wpl_namespace_session *nss_this,
 			wpl_io *io

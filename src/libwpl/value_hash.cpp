@@ -2,7 +2,7 @@
 
 -------------------------------------------------------------
 
-Copyright (c) MMXIII Atle Solbakken
+Copyright (c) MMXIII-MMXIV Atle Solbakken
 atle@goliathdns.no
 
 -------------------------------------------------------------
@@ -26,29 +26,14 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
+#include "value_array.h"
 #include "value_hash.h"
 #include "value_int.h"
+#include "value_pointer.h"	
 #include "operator_types.h"
+#include "types.h"
 
 #include <string>
-
-int wpl_value_hash::hash_subscripting() {
-	if (!(lhs == this)) {
-		throw runtime_error ("Left side of [] was not this hash");
-	}
-	string key = rhs->toString();
-
-	wpl_value *value = get(key);
-
-	if (value == NULL) {
-		value = template_type->new_instance();
-		set (key, value);
-	}
-
-	result = value;
-
-	return (WPL_OP_OK|WPL_OP_NAME_RESOLVED);
-}
 
 int wpl_value_hash::do_operator (
 		wpl_expression_state *exp_state,
@@ -63,7 +48,36 @@ int wpl_value_hash::do_operator (
 	int ret = WPL_OP_UNKNOWN;
 
 	if (op == &OP_ARRAY_SUBSCRIPTING) {
-		ret = hash_subscripting();
+		if (!(lhs == this)) {
+			throw runtime_error ("Left side of [] was not this hash");
+		}
+		string key = rhs->toString();
+
+		wpl_value *value = get(key);
+
+		if (!exp_state->empty()) {
+			shunting_yard_carrier &next_carrier = exp_state->top();
+			if (next_carrier.op == &OP_DEFINED) {
+				exp_state->pop();
+
+				/* The size of the hash might increase after this test */
+				if (!value) {
+					erase(key);
+				}
+
+				wpl_value_bool result(value != NULL);
+				return result.do_operator_recursive(exp_state, final_result);
+			}
+		}
+
+		if (value == NULL) {
+			value = template_type->new_instance();
+			set (key, value);
+		}
+
+		result = value;
+
+		ret = (WPL_OP_OK|WPL_OP_NAME_RESOLVED);
 	}
 	else if (op == &OP_DISCARD) {
 		ret = discard();
@@ -71,6 +85,22 @@ int wpl_value_hash::do_operator (
 	else if (op == &OP_COUNT) {
 		wpl_value_int count(size());
 		return count.do_operator_recursive(exp_state, final_result);
+	}
+	else if (op == &OP_KEYS) {
+		unique_ptr<wpl_type_complete> my_array_type (
+			wpl_type_global_array->new_instance(wpl_type_global_string)
+		);
+		unique_ptr<wpl_value_array> my_array (
+			(wpl_value_array*) my_array_type->new_instance()
+		);
+
+		get_keys(my_array.get());
+
+		return my_array->do_operator_recursive(exp_state, final_result);
+	}
+	else if (op == &OP_POINTERTO) {
+		wpl_value_pointer result(exp_state->get_nss(), container_type, this);
+		return result.do_operator_recursive(exp_state, final_result);
 	}
 
 	if (ret & WPL_OP_OK) {

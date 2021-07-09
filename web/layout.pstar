@@ -3,6 +3,7 @@ HTML_TEMPLATE layout_head {
 	<html>
 	<head>
 	<link type="text/css" rel="stylesheet" href="/pstar.css" />
+	<meta charset="utf-8" />
 	<title>P* Web Programming Language - {@title}</title>
 	</head>
 	<body>
@@ -10,19 +11,32 @@ HTML_TEMPLATE layout_head {
 	<div id="logo"><span>Web Programming Language</span></div>
 	<div id="menu">
 		<ul class="menu_buttons">
-			{@LOOP (++i < @buttons)
+			{@foreach (auto button; buttons)
 				<li class ="{@
-					buttons[i]->classname
+					button->classname
 				}"><div><a href="{@
-					url_prefix . buttons[i]->name
+					url_prefix . button->name
 				}"><span>{@
-					buttons[i]->text
+					button->text
 				}</span></a></div></li>
 			}
 			<li style="clear:left"></li>
 		</ul>
 	</div>
+}
+
+HTML_TEMPLATE layout_nocolumns_body_begin {
 	<div id="body">
+}
+
+HTML_TEMPLATE layout_columns_body_begin {
+	<div id="columns_master">
+	<div id="columns_sidebar">
+}
+
+HTML_TEMPLATE layout_columns_body_intermediate {
+	</div>
+	<div id="columns_body"><div>
 }
 
 SCENE layout_head_scene {
@@ -30,20 +44,22 @@ SCENE layout_head_scene {
 
 	string title = "-";
 	struct button {
+		button(string _name, string _text) {
+			name = _name;
+			text = _text;
+		};
 		public string name;
 		public string text;
 		public string classname;
 	};
 
 	array<button> buttons;
-	buttons[0]->name = "what_is";
-	buttons[0]->text = "What is P*?";
-	buttons[1]->name = "how_to_get";
-	buttons[1]->text = "How to get P*?";
-	buttons[2]->name = "why_pstar";
-	buttons[2]->text = "Why P*?";
-	buttons[3]->name = "documentation";
-	buttons[3]->text = "Documentation";
+	buttons[@buttons]("home", "Home");
+	buttons[@buttons]("download", "Download");
+	buttons[@buttons]("why_pstar", "Why P*?");
+	buttons[@buttons]("quickstart", "Quick Start Guide");
+	buttons[@buttons]("code_snippets", "Code snippets");
+	buttons[@buttons]("documentation", "Documentation");
 
 	ENV env;
 	int i = "-1";
@@ -61,10 +77,28 @@ SCENE layout_head_scene {
 	#HTML_TEMPLATE layout_head;
 }
 
-HTML_TEMPLATE layout_foot {
+HTML_TEMPLATE layout_nocolumns_body_end {
 	</div>
+}
+
+HTML_TEMPLATE layout_columns_body_end {
+	</div>
+	</div>
+	</div>
+}
+
+HTML_TEMPLATE layout_foot {
 	<div id="foot">Copyright &copy; 2013-2014 <a href="mailto:atle@goliathdns.no">Atle Solbakken</a>.</div>
 	</div>
 	</body>
 	</html>
+}
+
+SCENE layout_nocolumns {
+	#CONTENT_TYPE text/html;
+	#SCENE layout_head_scene;
+	#HTML_TEMPLATE layout_nocolumns_body_begin;
+	#SCENE page;
+	#HTML_TEMPLATE layout_nocolumns_body_end;
+	#HTML_TEMPLATE layout_foot;
 }

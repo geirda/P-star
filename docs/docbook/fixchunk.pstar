@@ -1,0 +1,169 @@
+#!/usr/bin/wpl -f
+
+SCENE main {
+	/* Specify which chapters we want */
+	array<int> get_chapters;
+	3, 4 => get_chapters;
+
+	struct chunk {
+		string title;
+		string filename;
+		int id;
+
+		FILE input;
+
+		chunk (int id_, string path) {
+			id = id_;
+	
+			filename = path;
+			filename =~ s/^.+\/([^\/]+)$/$1/;
+
+			input();
+			if (!input->open_rw (path)) {
+				errcho "Could not open file: " . input->error() . "\n";
+			}
+			else {
+				parse_file(input);
+
+				input->flush();
+				input->close();
+			}
+		};
+
+		public int get_id() {
+			return id;
+		};
+
+		public string dump() {
+			if (filename != "" && title != "") {
+				return "buttons[@buttons](\"$filename\", \"$title\");";
+			}
+		};
+
+		int parse_file(LINE line) {
+			int header_done = 0;
+			while (line++) {
+				string tmp = line;
+
+				if ((header_done & 3) != 3) {
+					if (!(header_done & 1) && tmp =~ s/^.+<title>(.+)<\/title>.+$/$1/) {
+						title = tmp;
+
+						header_done |= 1;
+						tmp = line;
+					}
+					if (!(header_done & 2) && tmp =~ s/^.+<body>(.+)$/$1/) {
+						header_done |= 2;
+						line = tmp;
+						input->update(line);
+					}
+					if (header_done == 0) {
+						line = "";
+						input->update(line);
+					}
+				}
+				if ((header_done & 3) == 3) {
+					if (tmp =~ s/^(.+)<\/body>.+$/$1/) {
+						line = tmp;
+						input->update(line);
+						break;
+					}
+				}
+			}
+		};
+	};
+
+	struct chapter {
+		int chapter_id;
+		array<chunk> chunks;
+	
+		chapter (int chapter_id_) {
+			chapter_id = chapter_id_;
+		};
+
+		public void add_chunk (int section, string path) {
+			chunks[section](section, path);
+		};
+
+		/* Write P-star code to a file for the web site to use */
+		public int write_index_file() {
+			FILE index_file;
+			string filename = "ch" . chapter_id . "_index.pstar";
+			if (!index_file->open_truncate(filename)) {
+				errcho "Could not open index file '$filename' for writing: " . index_file->error() . "\n";
+				return 1;
+			}
+
+			LINE line = index_file;
+			line++;
+
+			line .= "SCENE buttons {\n";
+			line .= "
+	struct doc_button {
+		public string filename;
+		public string title;
+		public string class;
+
+		doc_button (string a, string b) {
+			filename = a;
+			title = b;
+		};
+	};
+
+	protected array<doc_button> buttons;
+";
+
+			pointer<chunk> chunk_it;
+			foreach (chunk_it; chunks) {
+				if (*chunk_it->get_id() > 0) {
+					line .= "\t" . *chunk_it->dump() . "\n";
+				}
+			}
+
+			line .= "}\n";
+
+			index_file->update(line);
+			index_file->flush();
+			index_file->close();
+		};
+	};
+
+	array<chapter> chapters;
+
+	STDIN stdin;
+	string path;
+	while ((path = stdin) != "") {
+		array<string> matches;
+		int ch;
+		int se;
+
+		echo "Fixing chunk $path\n";
+
+		path =~ /[1-9]\d*/g => matches;
+
+		if (@matches == 2) {
+			ch = matches[0];
+			se = 0;
+		}
+		else if (@matches == 3) {
+			ch = matches[0];
+			se = matches[1];
+		}
+
+		if (ch) {
+			if (!defined chapters[ch]) {
+				chapters[ch](ch);
+			}
+			chapters[ch]->add_chunk(se, path);
+		}
+	}
+
+	int chapter;
+	foreach (chapter; get_chapters) {
+		if (chapters[chapter]->write_index_file() != 0) {
+			return 1;
+		}
+	}
+
+	return 0;
+}

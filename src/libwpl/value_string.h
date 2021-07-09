@@ -30,9 +30,9 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "value_bool.h"
 #include "output_json.h"
 #include "parasite.h"
+#include "value_holder.h"
 
 #include <cstdlib>
 #include <string>
@@ -45,8 +45,8 @@ template<typename A> class wpl_value_strings : public wpl_value_holder<A> {
 	int neq() {RESULT_LOGIC = (LHS != RHS); return WPL_OP_LOGIC_OK; };
 	int eq() {RESULT_LOGIC = (LHS == RHS); return WPL_OP_LOGIC_OK; };
 	int concat() {RESULT = LHS + RHS; return WPL_OP_OK; }
-	int assign_concat() {RESULT = LHS + RHS; LHS = RESULT; return WPL_OP_OK|WPL_OP_DATA_MODIFIED; }
-	int assign() {LHS = RHS; RESULT = RHS; return WPL_OP_OK|WPL_OP_DATA_MODIFIED; }
+	int assign_concat() {RESULT = LHS + RHS; LHS = RESULT; return WPL_OP_OK|WPL_OP_DATA_MODIFIED|WPL_OP_ASSIGN; }
+	int assign() {LHS = RHS; RESULT = RHS; return WPL_OP_OK|WPL_OP_DATA_MODIFIED|WPL_OP_ASSIGN; }
 	int echo() {cout << RHS; return WPL_OP_OK; }
 	int errcho() {cerr << RHS; return WPL_OP_OK; }
 	int is_empty() {RESULT_LOGIC = (RHS).empty() ? true : false; return WPL_OP_LOGIC_OK; }
@@ -63,6 +63,7 @@ template<typename A> class wpl_value_strings : public wpl_value_holder<A> {
 		CALL_OP(OP_ASSIGN, assign)
 		CALL_OP(OP_ECHO, echo)
 		CALL_OP(OP_ERRCHO, errcho)
+		CALL_OP(OP_LOGIC_NOT, is_empty)
 		CALL_OP(OP_IS_EMPTY, is_empty)
 		return wpl_value_holder<A>::__do_operator(op);
 	}
@@ -70,18 +71,18 @@ template<typename A> class wpl_value_strings : public wpl_value_holder<A> {
 
 class wpl_value_string : public wpl_value_strings<string>, public wpl_parasite_host<wpl_value_string> {
 	public:
-	PRIMITIVE_CONSTRUCTOR(string,string)
+	PRIMITIVE_CONSTRUCTOR(string,string,strings)
 	PRIMITIVE_TYPEINFO(string)
 	PRIMITIVE_SET_WEAK_NOTIFY(string,string,toString())
 	PRIMITIVE_DO_OPERATOR_NOTIFY(string,toString())
 
-	wpl_value_string(const char *new_value) {
+/*	wpl_value_string (const char *new_value) : wpl_value_string() {
 		value = new_value;
 	}
 
-	wpl_value_string(const char *new_value, int len) {
+	wpl_value_string(const char *new_value, int len)  : wpl_value_string() {
 		value = string(new_value, len);
-	}
+	}*/
 
 	bool toBool() {
 		return (!value.empty());
@@ -104,7 +105,10 @@ class wpl_value_string : public wpl_value_strings<string>, public wpl_parasite_h
 	double toDouble() {
 		return strtod (value.c_str(), NULL);
 	}
-	string toString() {
+	string toString() const override {
+		return value;
+	}
+	string &rawToString() {
 		return value;
 	}
 	char* toVoid(){

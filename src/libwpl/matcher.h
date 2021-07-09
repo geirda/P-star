@@ -283,12 +283,21 @@ class wpl_matcher {
 		return false;
 	}
 
-	inline bool ignore_letter (const char letter) {
+	inline int ignore_letter (const char letter) {
 		if (text_rpos[0] == letter) {
 			text_rpos++;
-			return true;
+			return 1;
 		}
-		return false;
+		return 0;
+	}
+
+	inline int ignore_many_letters (const char letter) {
+		int total = 0;
+		while (text_rpos[0] == letter) {
+			text_rpos++;
+			total++;
+		}
+		return total;
 	}
 
 	inline void ignore_string (const int len) {
@@ -343,6 +352,8 @@ class wpl_matcher {
 
 	int ignore_string_match (const uint32_t match, const uint32_t ignore);
 
+	void go_to_linestart();
+
 	public:
 	void load_position (const wpl_matcher_position &pos) {
 		text = pos.text;
@@ -358,6 +369,19 @@ class wpl_matcher {
 		ret.text_max = text_max;
 		ret.filename = filename;
 		return ret;
+	}
+};
+
+class wpl_smart_load_position {
+	wpl_matcher *tgt;
+	wpl_matcher *src;
+
+	public:
+	wpl_smart_load_position(wpl_matcher *tgt, wpl_matcher *src) :
+		tgt(tgt), src(src)
+	{}
+	~wpl_smart_load_position() {
+		tgt->load_position(src->get_position());
 	}
 };
 

@@ -2,7 +2,7 @@
 
 -------------------------------------------------------------
 
-Copyright (c) MMXIII Atle Solbakken
+Copyright (c) MMXIII-MMXIV Atle Solbakken
 atle@goliathdns.no
 Copyright (c) MMXIV Sebastian Baginski
 sebthestampede@gmail.com
@@ -63,7 +63,7 @@ void wpl_value_time::set_weak (wpl_value *value) {
 	}
 }
 
-string wpl_value_time::toString() {
+string wpl_value_time::toString() const {
 	string tmp;
 	format_time(NULL, tmp);
 	return tmp;
@@ -193,12 +193,22 @@ int wpl_value_time::do_operator (
 		return result.do_operator_recursive(exp_state, final_result);
 	}
 	else if (op == &OP_ASSIGN) {
-		set_weak(rhs);
-        notify_parasites();
+		lhs->set_weak(rhs);
+	        notify_parasites();
 		return do_operator_recursive(exp_state, final_result);
+	}
+	else if (op == &OP_LOGIC_NOT) {
+		wpl_value_bool result (!get_is_set());
+
+		return result.do_operator_recursive(exp_state, final_result);
 	}
 	else if (op == &OP_FUNCTION_CALL) {
 		throw runtime_error("Unexpected function call () after TIME object");
+	}
+	else if ((op->flags & (WPL_OP_F_ASSOC_LEFT|WPL_OP_F_HAS_BOTH)) == (WPL_OP_F_ASSOC_LEFT|WPL_OP_F_HAS_BOTH)) {
+		// Assume integer operation
+		wpl_value_int my_int(toInt());
+		return my_int.do_operator(exp_state, final_result, op, &my_int, rhs);
 	}
 
 	return WPL_OP_UNKNOWN;

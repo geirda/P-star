@@ -28,7 +28,7 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include "types.h"
+#include "type_template.h"
 #include "exception.h"
 #include "value.h"
 #include "io.h"
@@ -37,6 +37,7 @@ along with P*.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 
 class wpl_value;
+class wpl_value_array;
 
 /**
  * @brief Hash implementation
@@ -45,8 +46,10 @@ class wpl_hash {
 	map<string,unique_ptr<wpl_value>> hash;
 
 	public:
+	void erase(string &key);
 	void set(string &key, wpl_value *value);
 	wpl_value *get(string &key);
+	void get_keys(wpl_value_array *array);
 
 	protected:
 	wpl_hash () {};
@@ -57,7 +60,7 @@ class wpl_hash {
 	int size() {
 		return hash.size();
 	}
-	void notify_destructor (wpl_namespace_session *nss, wpl_io &io);
+	void notify_destructor (wpl_state *state, wpl_namespace_session *nss, wpl_io &io);
 };
 
 /**

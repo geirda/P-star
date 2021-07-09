@@ -1,3 +1,64 @@
+pstar (1.3) unstable; urgency=medium
+
+  * Adapt to MySQL 8.0, builds on Debian Buster
+
+ -- Atle Solbakkent <atle@goliathdns.no>  Wed, 20 May 2020 09:24:51 +0200
+
+pstar (1.2~alpha10+nmu1) stretch; urgency=medium
+
+  * Release for stretch
+
+ -- Atle Solbakken <atle@goliathdns.no>  Sun, 16 Jun 2019 10:22:12 +0200
+
+pstar (1.2~alpha10) experimental; urgency=low
+
+  * Fix bugs in operator associativity which became apparent when the new pointer to operator & crashed with bitwise &.
+  * Set correct associativity for assign operators like = and +=. They are now right associative and the right value calls set_weak on the left value.
+  * ++ and -- removed for floats.
+  * All template types are now added to top level namespace, wpl_program, so that definitions of template types in different branches of the program can be used together.
+  * New type "auto" which is useful in loops. Auto type preserves the type it gets when first assigned to.
+  * Add "defined" operator to ENV type to check if values exist. Change the precedence of "defined" so that its lower than element selection ->.
+  * Remove template conditional blocks LOOP and CONDITION. All four types if, while, foreach and for are now available in templates.
+  * Variable declaration allowed in the init part of conditional blocks like "for (int i = 0; ..."-
+  * Loads of internal code restructuring
+  * Create operator "keys" which can be used with hashes. It returns an array of all the keys in a hash.
+  * Allow usage of pragmas inside HTML templates. Not all are supported, but @TEMPLATE is removed and the pragma @#HTML_TEMPLATE should be used instead.
+  * #HTML_TEMPLATE_VAR pragma takes a comma separated list of HTML id tag values to search for and print as JSON variables. We do no longer search for variables.
+  * Allow comments in top-level file
+  * Allow global variables and struct definitions in global namespace (outside SCENE blocks).
+  * Added error message pragma #HTTP_ERROR which produces a 500 status and prints a default error page to the user.
+  * Remove semicolon from Content-type
+  * Allow to send POST value as argument to functions
+  * Fix error message output, the whole line in where the error occured is printed.
+
+ -- Atle Solbakken <atle@goliathdns.no>  Tue, 21 Oct 2014 22:41:31 +0200
+
+pstar (1.2~alpha9) experimental; urgency=low
+
+  * Implement pointers as a template type, like 'pointer<int>'. Values are made to pointers with operator &, and pointers are dereferenced with *.
+  * Arrays can be looped easily in foreach loop, iterating either with values or pointers.
+  * Fix a problem with operator precedence where right assoc operators had too low precedence
+  * Fix problems with template types in the namespace where multiple copies of the same template were created. This made them incompatible
+  * Comments can now be placed inside the struct body
+  * Fix template parsing problem where missing >'s in definition were not detected
+
+ -- Atle Solbakken <atle@goliathdns.no>  Sat, 11 Oct 2014 22:35:18 +0200
+
+pstar (1.2~alpha8) experimental; urgency=low
+
+  * Fix issues with constructors
+  * Add ! operator for string and time object to check for empty values
+  * Add range operators inclusive .. and exclusive ...
+  * Implement foreach loop (no direct array support yet)
+  * Fix some bad memory problems
+  * At first declaration of structs, operator * can be used to skip call to the constructor (useful for loops)
+  * Added defined operator for arrays and hashes to check for unset values
+  * Added ==> operator which clears an array and writes in a list, as opposed to => which only appends
+  * Make the LINE object support .= operator
+  * Added pragma #DUMP_FILE to dump a file from disk directly to output
+
+ -- Atle Solbakken <atle@goliathdns.no>  Tue, 07 Oct 2014 23:45:29 +0200
+
 pstar (1.2~alpha7) experimental; urgency=low
 
   * Added support for TEMPLATE blocks in HTML templates to call other templates

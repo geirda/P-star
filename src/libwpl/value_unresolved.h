@@ -38,9 +38,9 @@ using namespace std;
 
 class wpl_value_unresolved_identifier : public wpl_value_strings<string> {
 	public:
-	PRIMITIVE_TYPEINFO(unresolved_identifier)
+	PRIMITIVE_TYPEATTR(unresolved_identifier)
 
-	wpl_value_unresolved_identifier() {}
+	wpl_value_unresolved_identifier() : wpl_value_strings<string>() {}
 	wpl_value_unresolved_identifier(const wpl_value_unresolved_identifier &copy) :
 		wpl_value_strings(copy) {
 	}
@@ -66,19 +66,19 @@ class wpl_value_unresolved_identifier : public wpl_value_strings<string> {
 			wpl_value *final_result
 			) override;
 
-	wpl_value *resolve(wpl_namespace_session *nss) override;
+/*	wpl_value *resolve(wpl_namespace_session *nss) override;*/
 
 	void output(wpl_io &io) override {
 		cerr << "In output() of unresolved identifier '" << value << "':\n";
 		throw runtime_error("Cannot output unresolved identifiers");
 	}
 
-	string toString() {
+	string toString() const {
 		return value;
 	}
 
-	bool isUnresolved() const override {
+/*	bool isUnresolved() const override {
 		return true;
-	}
+	}*/
 };
 
